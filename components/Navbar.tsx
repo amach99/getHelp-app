@@ -38,10 +38,10 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-lg font-display">
-              A
+              G
             </div>
             <span className="font-display font-bold text-xl tracking-tight text-slate-800">
-              Apprentice
+              Get Help
             </span>
           </Link>
 

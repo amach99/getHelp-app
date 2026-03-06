@@ -24,7 +24,7 @@ export default function AuthPage() {
     setSubmitting(true);
     try {
       await signInWithGoogle();
-      toast.success("Welcome to Apprentice!");
+      toast.success("Welcome to Get Help!");
       router.replace("/");
     } catch {
       toast.error("Google sign-in failed. Try again.");
@@ -40,7 +40,7 @@ export default function AuthPage() {
       if (mode === "signup") {
         if (!name.trim()) { toast.error("Please enter your name."); return; }
         await signUpWithEmail(email, password, name);
-        toast.success("Account created! Welcome to Apprentice 🎉");
+        toast.success("Account created! Welcome to Get Help 🎉");
       } else {
         await signInWithEmail(email, password);
         toast.success("Welcome back!");
@@ -72,10 +72,10 @@ export default function AuthPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary rounded-3xl flex items-center justify-center text-white font-bold text-3xl font-display mx-auto mb-4 shadow-lg shadow-primary/20">
-            A
+            G
           </div>
           <h1 className="font-display font-bold text-3xl text-slate-800 mb-1">
-            {mode === "signin" ? "Welcome back" : "Join Apprentice"}
+            {mode === "signin" ? "Welcome back" : "Join Get Help"}
           </h1>
           <p className="text-muted text-sm">
             {mode === "signin"

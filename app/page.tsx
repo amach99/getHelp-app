@@ -142,7 +142,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/30" />
         <div className="relative z-10 text-center px-4 max-w-2xl">
           <h1 className="font-display text-5xl md:text-6xl font-bold text-white mb-3 tracking-tight">
-            Apprentice
+            Get Help
           </h1>
           <p className="text-lg md:text-xl text-white/80 font-light mb-8">
             Build a culture of daily kindness.

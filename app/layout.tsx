@@ -5,7 +5,7 @@ import { Toaster } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "Apprentice | Build a Culture of Daily Kindness",
+  title: "Get Help | Build a Culture of Daily Kindness",
   description: "A lightweight, location-based platform that connects people who need help with nearby people willing to lend a hand.",
 };
 

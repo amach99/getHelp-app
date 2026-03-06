@@ -45,6 +45,8 @@ export interface UserProfile {
   neighborhood: string;
   totalHelps: number;
   totalRequests: number;
+  weeklyHelps: number;
+  weekStartDate: string | null;
   streak: number;
   lastActiveDate: string | null;
   badges: Badge[];

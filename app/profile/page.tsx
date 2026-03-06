@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateProfile } from "firebase/auth";
 import { db, storage } from "@/lib/firebase";
@@ -66,12 +67,28 @@ export default function ProfilePage() {
     if (!displayName.trim()) { toast.error("Name can't be empty."); return; }
     setSaving(true);
     try {
-      await updateDoc(doc(db, "users", user.uid), {
+      const updates: Record<string, unknown> = {
         displayName: displayName.trim(),
         neighborhood: neighborhood.trim(),
-      });
+      };
+
+      const earningLocalWatch =
+        neighborhood.trim() &&
+        !profile!.neighborhood &&
+        !profile!.badges.some((b) => b.id === "local_watch");
+
+      if (earningLocalWatch) {
+        updates.badges = arrayUnion({
+          id: "local_watch",
+          name: "Local Watch",
+          earnedAt: Timestamp.now(),
+        });
+      }
+
+      await updateDoc(doc(db, "users", user.uid), updates);
       await refreshProfile();
-      toast.success("Profile updated!");
+      if (earningLocalWatch) toast.success("🏅 Badge unlocked: Local Watch!");
+      else toast.success("Profile updated!");
     } catch {
       toast.error("Failed to save. Try again.");
     } finally {

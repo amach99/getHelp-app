@@ -47,6 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       neighborhood: extraData?.neighborhood || "",
       totalHelps: 0,
       totalRequests: 0,
+      weeklyHelps: 0,
+      weekStartDate: null,
       streak: 0,
       lastActiveDate: null,
       badges: [],

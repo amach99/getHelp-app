@@ -37,7 +37,7 @@ export default function HomePage() {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterCategory>("All");
   const [leaderboard, setLeaderboard] = useState<
-    { uid: string; displayName: string; totalHelps: number; isCurrentUser: boolean }[]
+    { uid: string; displayName: string; totalHelps: number; weeklyHelps: number; isCurrentUser: boolean }[]
   >([]);
 
   // Redirect if not auth
@@ -73,7 +73,7 @@ export default function HomePage() {
     const snap = await getDocs(q);
     const data = snap.docs.map((d) => {
       const p = d.data() as UserProfile;
-      return { uid: p.uid, displayName: p.displayName, totalHelps: p.totalHelps, isCurrentUser: p.uid === user.uid };
+      return { uid: p.uid, displayName: p.displayName, totalHelps: p.totalHelps, weeklyHelps: p.weeklyHelps ?? 0, isCurrentUser: p.uid === user.uid };
     });
     setLeaderboard(data);
   }, [user]);

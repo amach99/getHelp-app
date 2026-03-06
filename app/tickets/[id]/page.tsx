@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { doc, onSnapshot, updateDoc, arrayUnion, getDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Ticket, UserProfile } from "@/lib/types";
+import { getNewBadges, getWeekStart } from "@/lib/badges";
 import { useAuth } from "@/contexts/AuthContext";
 import { CATEGORY_STYLES } from "@/lib/categories";
 import { MapPin, Clock, Users, Zap, ArrowLeft, CheckCircle, XCircle, Loader2, MessageCircle } from "lucide-react";
@@ -84,6 +85,8 @@ export default function TicketDetailPage() {
       const todayStr = new Date().toISOString().split("T")[0];
       const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
+      const weekStart = getWeekStart();
+
       await Promise.all(
         ticket.acceptedHelpers.map(async (helperUid) => {
           const helperRef = doc(db, "users", helperUid);
@@ -101,10 +104,21 @@ export default function TicketDetailPage() {
             newStreak = 1;
           }
 
+          const newTotalHelps = helperData.totalHelps + 1;
+          const newWeeklyHelps =
+            helperData.weekStartDate === weekStart
+              ? (helperData.weeklyHelps ?? 0) + 1
+              : 1;
+
+          const newBadges = getNewBadges(helperData, newTotalHelps, newStreak);
+
           await updateDoc(helperRef, {
             totalHelps: increment(1),
+            weeklyHelps: newWeeklyHelps,
+            weekStartDate: weekStart,
             streak: newStreak,
             lastActiveDate: todayStr,
+            ...(newBadges.length > 0 ? { badges: arrayUnion(...newBadges) } : {}),
           });
         })
       );

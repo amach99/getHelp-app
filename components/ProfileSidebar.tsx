@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { UserProfile } from "@/lib/types";
 import { Flame, MapPin, Trophy } from "lucide-react";
@@ -17,6 +18,7 @@ interface LeaderboardEntry {
   uid: string;
   displayName: string;
   totalHelps: number;
+  weeklyHelps: number;
   isCurrentUser: boolean;
 }
 
@@ -26,6 +28,7 @@ interface Props {
 }
 
 export default function ProfileSidebar({ profile, leaderboard = [] }: Props) {
+  const [lbTab, setLbTab] = useState<"weekly" | "alltime">("weekly");
   const initials = profile.displayName
     .split(" ")
     .map((n) => n[0])
@@ -124,35 +127,61 @@ export default function ProfileSidebar({ profile, leaderboard = [] }: Props) {
       {/* Leaderboard */}
       {leaderboard.length > 0 && (
         <section className="bg-slate-900 rounded-4xl p-6 text-white">
-          <h3 className="font-display font-bold text-lg mb-5 flex items-center gap-2">
-            <Trophy size={16} className="text-primary" />
-            <span><span className="text-primary">Community</span> Leaderboard</span>
-          </h3>
-          <div className="space-y-2">
-            {leaderboard.slice(0, 5).map((entry, i) => (
-              <div
-                key={entry.uid}
-                className={`flex items-center justify-between p-3 rounded-xl transition-colors ${
-                  entry.isCurrentUser
-                    ? "bg-primary/20 border border-primary/30"
-                    : "bg-white/5 hover:bg-white/10"
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display font-bold text-lg flex items-center gap-2">
+              <Trophy size={16} className="text-primary" />
+              <span><span className="text-primary">Community</span> Leaderboard</span>
+            </h3>
+          </div>
+          {/* Tabs */}
+          <div className="flex gap-1 bg-white/10 rounded-xl p-1 mb-4">
+            {(["weekly", "alltime"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setLbTab(tab)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  lbTab === tab ? "bg-primary text-white" : "text-slate-400 hover:text-white"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-slate-400 w-4">{i + 1}</span>
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                    style={{ backgroundColor: `hsl(${(i * 60 + 200) % 360}, 65%, 55%)` }}
-                  >
-                    {entry.displayName[0]}
+                {tab === "weekly" ? "This Week" : "All Time"}
+              </button>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {leaderboard
+              .slice()
+              .sort((a, b) =>
+                lbTab === "weekly"
+                  ? b.weeklyHelps - a.weeklyHelps
+                  : b.totalHelps - a.totalHelps
+              )
+              .slice(0, 5)
+              .map((entry, i) => (
+                <div
+                  key={entry.uid}
+                  className={`flex items-center justify-between p-3 rounded-xl transition-colors ${
+                    entry.isCurrentUser
+                      ? "bg-primary/20 border border-primary/30"
+                      : "bg-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-slate-400 w-4">{i + 1}</span>
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                      style={{ backgroundColor: `hsl(${(i * 60 + 200) % 360}, 65%, 55%)` }}
+                    >
+                      {entry.displayName[0]}
+                    </div>
+                    <span className={`text-sm font-medium ${entry.isCurrentUser ? "text-primary" : "text-white"}`}>
+                      {entry.isCurrentUser ? "You" : entry.displayName}
+                    </span>
                   </div>
-                  <span className={`text-sm font-medium ${entry.isCurrentUser ? "text-primary" : "text-white"}`}>
-                    {entry.isCurrentUser ? "You" : entry.displayName}
+                  <span className="text-primary font-bold text-sm">
+                    {lbTab === "weekly" ? entry.weeklyHelps : entry.totalHelps} helps
                   </span>
                 </div>
-                <span className="text-primary font-bold text-sm">{entry.totalHelps} helps</span>
-              </div>
-            ))}
+              ))}
           </div>
         </section>
       )}

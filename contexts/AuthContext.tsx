@@ -10,8 +10,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
+  deleteUser,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { UserProfile } from "@/lib/types";
 
@@ -24,6 +25,7 @@ interface AuthContextType {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -107,9 +109,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function deleteAccount() {
+    if (!user) return;
+    await deleteDoc(doc(db, "users", user.uid));
+    await deleteUser(user);
+    setUser(null);
+    setProfile(null);
+  }
+
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, signInWithGoogle, signUpWithEmail, signInWithEmail, logout, refreshProfile }}
+      value={{ user, profile, loading, signInWithGoogle, signUpWithEmail, signInWithEmail, logout, refreshProfile, deleteAccount }}
     >
       {children}
     </AuthContext.Provider>

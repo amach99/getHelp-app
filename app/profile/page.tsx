@@ -8,7 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateProfile } from "firebase/auth";
 import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Save, LogOut, Flame, Award, Camera } from "lucide-react";
+import { Loader2, Save, LogOut, Flame, Award, Camera, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 const BADGE_ICONS: Record<string, string> = {
@@ -21,12 +21,14 @@ const BADGE_ICONS: Record<string, string> = {
 };
 
 export default function ProfilePage() {
-  const { user, profile, logout, loading, refreshProfile } = useAuth();
+  const { user, profile, logout, loading, refreshProfile, deleteAccount } = useAuth();
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -99,6 +101,24 @@ export default function ProfilePage() {
   async function handleLogout() {
     await logout();
     router.push("/auth");
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      router.replace("/auth");
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      if (code === "auth/requires-recent-login") {
+        toast.error("Please sign out and sign back in before deleting your account.");
+      } else {
+        toast.error("Failed to delete account. Please try again.");
+      }
+      setConfirmDelete(false);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   if (loading || !user || !profile) {
@@ -239,6 +259,40 @@ export default function ProfilePage() {
       >
         <LogOut size={16} /> Sign out
       </button>
+
+      {/* Delete account */}
+      <div className="mt-3">
+        {!confirmDelete ? (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="w-full flex items-center justify-center gap-2 py-4 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl font-semibold transition-colors text-sm border border-transparent hover:border-red-100"
+          >
+            <Trash2 size={15} /> Delete Account
+          </button>
+        ) : (
+          <div className="border border-red-200 bg-red-50 rounded-2xl p-5 space-y-3">
+            <p className="text-sm font-semibold text-red-700 text-center">
+              This will permanently delete your account and all your data. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                {deleting ? "Deleting..." : "Yes, delete"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -35,6 +35,8 @@ export interface Ticket {
   status: TicketStatus;
   createdAt: Timestamp;
   expiresAt: Timestamp;
+  lastMessageAt: Timestamp | null;
+  readBy: Record<string, Timestamp>;
 }
 
 export interface UserProfile {

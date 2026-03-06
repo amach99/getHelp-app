@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Ticket } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  Home, Ticket, MessageCircle, User, LogOut, Menu, X, Plus
+  Home, Ticket as TicketIcon, MessageCircle, User, LogOut, Menu, X, Plus
 } from "lucide-react";
 
 const navLinks = [
   { label: "Feed", href: "/", icon: Home },
-  { label: "My Tickets", href: "/my-tickets", icon: Ticket },
+  { label: "My Tickets", href: "/my-tickets", icon: TicketIcon },
   { label: "Chat", href: "/chat", icon: MessageCircle },
   { label: "Profile", href: "/profile", icon: User },
 ];
@@ -21,6 +24,34 @@ export default function Navbar() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setHasUnread(false); return; }
+    const uid = user.uid;
+    let tickets1: Ticket[] = [];
+    let tickets2: Ticket[] = [];
+
+    function check() {
+      const all = [...tickets1, ...tickets2];
+      setHasUnread(all.some((t) => {
+        if (!t.lastMessageAt) return false;
+        const readAt = t.readBy?.[uid];
+        if (!readAt) return true;
+        return t.lastMessageAt.toMillis() > readAt.toMillis();
+      }));
+    }
+
+    const unsub1 = onSnapshot(
+      query(collection(db, "tickets"), where("requesterId", "==", uid)),
+      (snap) => { tickets1 = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Ticket)); check(); }
+    );
+    const unsub2 = onSnapshot(
+      query(collection(db, "tickets"), where("acceptedHelpers", "array-contains", uid)),
+      (snap) => { tickets2 = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Ticket)); check(); }
+    );
+    return () => { unsub1(); unsub2(); };
+  }, [user]);
 
   async function handleLogout() {
     await logout();
@@ -52,13 +83,16 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`hover:text-primary transition-colors pb-0.5 ${
+                  className={`relative hover:text-primary transition-colors pb-0.5 ${
                     pathname === link.href
                       ? "text-primary border-b-2 border-primary"
                       : ""
                   }`}
                 >
                   {link.label}
+                  {link.href === "/chat" && hasUnread && (
+                    <span className="absolute -top-1 -right-2.5 w-2 h-2 bg-red-500 rounded-full" />
+                  )}
                 </Link>
               ))}
 
@@ -153,11 +187,14 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-colors ${
+              className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-colors ${
                 pathname === link.href ? "text-primary" : "text-slate-400"
               }`}
             >
               <link.icon size={20} />
+              {link.href === "/chat" && hasUnread && (
+                <span className="absolute top-1.5 right-2.5 w-2 h-2 bg-red-500 rounded-full" />
+              )}
               <span className="text-[10px] font-medium">{link.label}</span>
             </Link>
           ))}

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  doc, onSnapshot, collection, addDoc, serverTimestamp,
+  doc, onSnapshot, collection, addDoc, serverTimestamp, updateDoc,
   query, orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -55,6 +55,17 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Mark chat as read when opened or new messages arrive
+  useEffect(() => {
+    if (!ticketId || !user || !ticket) return;
+    const isParticipant =
+      ticket.requesterId === user.uid || ticket.acceptedHelpers.includes(user.uid);
+    if (!isParticipant) return;
+    updateDoc(doc(db, "tickets", ticketId), {
+      [`readBy.${user.uid}`]: serverTimestamp(),
+    }).catch(() => {});
+  }, [ticketId, user, ticket, messages]);
+
   // Access check — only requester and accepted helpers can chat
   const hasAccess =
     user &&
@@ -73,6 +84,9 @@ export default function ChatPage() {
         senderPhoto: user.photoURL ?? null,
         text: text.trim(),
         createdAt: serverTimestamp(),
+      });
+      await updateDoc(doc(db, "tickets", ticketId), {
+        lastMessageAt: serverTimestamp(),
       });
       setText("");
     } catch {

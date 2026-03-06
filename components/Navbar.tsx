@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Ticket } from "@/lib/types";
+import type { Ticket } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Home, Ticket as TicketIcon, MessageCircle, User, LogOut, Menu, X, Plus

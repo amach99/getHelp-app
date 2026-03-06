@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { updateProfile } from "firebase/auth";
+import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Save, LogOut, Flame, Award } from "lucide-react";
+import { Loader2, Save, LogOut, Flame, Award, Camera } from "lucide-react";
 import toast from "react-hot-toast";
 
 const BADGE_ICONS: Record<string, string> = {
@@ -23,6 +25,8 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/auth");
@@ -34,6 +38,27 @@ export default function ProfilePage() {
       setNeighborhood(profile.neighborhood);
     }
   }, [profile]);
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB."); return; }
+    setUploadingPhoto(true);
+    try {
+      const storageRef = ref(storage, `avatars/${user.uid}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      await updateProfile(user, { photoURL: url });
+      await updateDoc(doc(db, "users", user.uid), { photoURL: url });
+      await refreshProfile();
+      toast.success("Profile picture updated!");
+    } catch {
+      toast.error("Failed to upload photo. Try again.");
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -90,6 +115,22 @@ export default function ProfilePage() {
                 initials
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary text-white rounded-full flex items-center justify-center shadow-md hover:bg-primary-dark transition-colors disabled:opacity-60"
+              title="Change profile picture"
+            >
+              {uploadingPhoto ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoUpload}
+            />
           </div>
           <div>
             <h2 className="font-display font-bold text-2xl text-slate-800">{profile.displayName}</h2>

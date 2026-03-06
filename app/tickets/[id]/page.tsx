@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, onSnapshot, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, arrayUnion, getDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Ticket } from "@/lib/types";
+import { Ticket, UserProfile } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { CATEGORY_STYLES } from "@/lib/categories";
 import { MapPin, Clock, Users, Zap, ArrowLeft, CheckCircle, XCircle, Loader2, MessageCircle } from "lucide-react";
@@ -77,8 +77,38 @@ export default function TicketDetailPage() {
   }
 
   async function handleMarkComplete() {
+    if (!ticket) return;
     try {
       await updateDoc(doc(db, "tickets", id), { status: "completed" });
+
+      const todayStr = new Date().toISOString().split("T")[0];
+      const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+
+      await Promise.all(
+        ticket.acceptedHelpers.map(async (helperUid) => {
+          const helperRef = doc(db, "users", helperUid);
+          const helperSnap = await getDoc(helperRef);
+          if (!helperSnap.exists()) return;
+          const helperData = helperSnap.data() as UserProfile;
+          const lastActive = helperData.lastActiveDate;
+
+          let newStreak: number;
+          if (lastActive === todayStr) {
+            newStreak = helperData.streak;
+          } else if (lastActive === yesterdayStr) {
+            newStreak = helperData.streak + 1;
+          } else {
+            newStreak = 1;
+          }
+
+          await updateDoc(helperRef, {
+            totalHelps: increment(1),
+            streak: newStreak,
+            lastActiveDate: todayStr,
+          });
+        })
+      );
+
       toast.success("Task marked as complete! 🎉");
       router.push("/my-tickets");
     } catch {

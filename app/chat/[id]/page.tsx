@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   doc, onSnapshot, collection, addDoc, serverTimestamp, updateDoc,
-  query, orderBy,
+  query, orderBy, Timestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Ticket, ChatMessage } from "@/lib/types";
@@ -62,7 +62,7 @@ export default function ChatPage() {
       ticket.requesterId === user.uid || ticket.acceptedHelpers.includes(user.uid);
     if (!isParticipant) return;
     updateDoc(doc(db, "tickets", ticketId), {
-      [`readBy.${user.uid}`]: serverTimestamp(),
+      [`readBy.${user.uid}`]: Timestamp.now(),
     }).catch(() => {});
   }, [ticketId, user, ticket, messages]);
 

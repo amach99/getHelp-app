@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -12,7 +12,6 @@ import {
   doc,
   updateDoc,
   arrayUnion,
-  getDocs,
   limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -62,23 +61,23 @@ export default function HomePage() {
     return unsub;
   }, [user]);
 
-  // Load leaderboard
-  const loadLeaderboard = useCallback(async () => {
+  // Real-time leaderboard
+  useEffect(() => {
     if (!user) return;
     const q = query(
       collection(db, "users"),
       orderBy("totalHelps", "desc"),
-      limit(5)
+      limit(10)
     );
-    const snap = await getDocs(q);
-    const data = snap.docs.map((d) => {
-      const p = d.data() as UserProfile;
-      return { uid: p.uid, displayName: p.displayName, totalHelps: p.totalHelps, weeklyHelps: p.weeklyHelps ?? 0, isCurrentUser: p.uid === user.uid };
+    const unsub = onSnapshot(q, (snap) => {
+      const data = snap.docs.map((d) => {
+        const p = d.data() as UserProfile;
+        return { uid: p.uid, displayName: p.displayName, totalHelps: p.totalHelps, weeklyHelps: p.weeklyHelps ?? 0, isCurrentUser: p.uid === user.uid };
+      });
+      setLeaderboard(data);
     });
-    setLeaderboard(data);
+    return unsub;
   }, [user]);
-
-  useEffect(() => { loadLeaderboard(); }, [loadLeaderboard]);
 
   async function handleAccept(ticketId: string) {
     if (!user || !profile) return;

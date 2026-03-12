@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Ticket } from "@/lib/types";
+import type { Ticket, DirectMessage } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Home, Ticket as TicketIcon, MessageCircle, User, LogOut, Menu, X, Plus
@@ -31,15 +31,22 @@ export default function Navbar() {
     const uid = user.uid;
     let tickets1: Ticket[] = [];
     let tickets2: Ticket[] = [];
+    let activeDms: DirectMessage[] = [];
 
     function check() {
-      const all = [...tickets1, ...tickets2];
-      setHasUnread(all.some((t) => {
+      const ticketUnread = [...tickets1, ...tickets2].some((t) => {
         if (!t.lastMessageAt) return false;
         const readAt = t.readBy?.[uid];
         if (!readAt) return true;
         return t.lastMessageAt.toMillis() > readAt.toMillis();
-      }));
+      });
+      const dmUnread = activeDms.some((dm) => {
+        if (!dm.lastMessageAt) return false;
+        const readAt = dm.readBy?.[uid];
+        if (!readAt) return true;
+        return dm.lastMessageAt.toMillis() > readAt.toMillis();
+      });
+      setHasUnread(ticketUnread || dmUnread);
     }
 
     const unsub1 = onSnapshot(
@@ -50,7 +57,16 @@ export default function Navbar() {
       query(collection(db, "tickets"), where("acceptedHelpers", "array-contains", uid)),
       (snap) => { tickets2 = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Ticket)); check(); }
     );
-    return () => { unsub1(); unsub2(); };
+    const unsub3 = onSnapshot(
+      query(collection(db, "directMessages"), where("participants", "array-contains", uid)),
+      (snap) => {
+        activeDms = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() } as DirectMessage))
+          .filter((dm) => dm.status !== "declined");
+        check();
+      }
+    );
+    return () => { unsub1(); unsub2(); unsub3(); };
   }, [user]);
 
   async function handleLogout() {

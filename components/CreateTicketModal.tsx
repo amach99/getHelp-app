@@ -76,6 +76,8 @@ export default function CreateTicketModal({ onClose, onCreated }: Props) {
         status: "open",
         createdAt: serverTimestamp() as unknown as Timestamp,
         expiresAt: Timestamp.fromDate(expiresAt),
+        lastMessageAt: null,
+        readBy: {},
       };
 
       await addDoc(collection(db, "tickets"), ticketData);

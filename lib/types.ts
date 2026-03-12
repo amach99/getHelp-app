@@ -39,6 +39,46 @@ export interface Ticket {
   readBy: Record<string, Timestamp>;
 }
 
+export interface Offer {
+  id: string;
+  ticketId: string;
+  helperId: string;
+  helperName: string;
+  helperPhoto: string | null;
+  dmId: string; // reference to DirectMessage doc
+  status: "pending" | "accepted" | "declined";
+  createdAt: Timestamp;
+}
+
+export interface TicketComment {
+  id: string;
+  ticketId: string;
+  authorId: string;
+  authorName: string;
+  authorPhoto: string | null;
+  text: string;
+  isOfferComment: boolean; // true = auto-generated when someone clicks "I can help"
+  createdAt: Timestamp;
+}
+
+export interface DirectMessage {
+  id: string;
+  ticketId: string;
+  ticketTitle: string;
+  ticketCategory: string;
+  participants: string[]; // [requesterId, helperId] — for array-contains queries
+  requesterId: string;
+  requesterName: string;
+  helperId: string;
+  helperName: string;
+  helperPhoto: string | null;
+  offerId: string;
+  status: "pending" | "accepted" | "declined";
+  createdAt: Timestamp;
+  lastMessageAt: Timestamp | null;
+  readBy: Record<string, Timestamp>;
+}
+
 export interface UserProfile {
   uid: string;
   displayName: string;
